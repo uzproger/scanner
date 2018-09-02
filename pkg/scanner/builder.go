@@ -52,6 +52,11 @@ func (b *Builder) Match(filter Filter) *Builder {
 	return b
 }
 
+func (b *Builder) Modified(filter Filter) *Builder {
+	b.filter = AndFilter(b.filter, filter)
+	return b
+}
+
 func (b *Builder) Build() (Scanner, error) {
 	var (
 		scanner Scanner

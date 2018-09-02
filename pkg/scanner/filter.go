@@ -4,6 +4,7 @@ import (
 	"context"
 	"regexp"
 	"strings"
+	"time"
 )
 
 const (
@@ -39,8 +40,20 @@ func (f *NamedFilter) Name() string {
 	return f.name
 }
 
+type ModifiedTimeFilter struct {
+	Filter
+}
+
+func (f *ModifiedTimeFilter) Match(file FileItem) bool {
+	return f.Filter.Match(file)
+}
+
 func MakeNamedFilter(filter Filter, name string) *NamedFilter {
 	return &NamedFilter{filter, name}
+}
+
+func MakeModifiedTimeFilter(filter Filter) *ModifiedTimeFilter {
+	return &ModifiedTimeFilter{filter}
 }
 
 type FilterFn func(file FileItem) bool
@@ -99,6 +112,36 @@ func OrFilter(filters ...Filter) Filter {
 
 		return false
 	}), nameOrFilter)
+}
+
+func After(t time.Time) Filter {
+	return MakeModifiedTimeFilter(FilterFn(func(file FileItem) bool {
+		if file.FileInfo == nil {
+			return false
+		}
+
+		return file.FileInfo.ModTime().After(t)
+	}))
+}
+
+func Before(t time.Time) Filter {
+	return MakeModifiedTimeFilter(FilterFn(func(file FileItem) bool {
+		if file.FileInfo == nil {
+			return false
+		}
+
+		return file.FileInfo.ModTime().Before(t)
+	}))
+}
+
+func Between(from time.Time, to time.Time) Filter {
+	return MakeModifiedTimeFilter(FilterFn(func(file FileItem) bool {
+		if file.FileInfo == nil {
+			return false
+		}
+
+		return file.FileInfo.ModTime().After(from) && file.FileInfo.ModTime().Before(to)
+	}))
 }
 
 func filterRegularFilesFn(f FileItem) bool {
